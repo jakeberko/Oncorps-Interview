@@ -1,0 +1,21 @@
+# Used AI to assist in creating the static indexing file
+
+indexes:
+  - ticker: SP500
+    name: "S&P 500"
+    file: data/SP500.csv
+    date_column: observation_date
+    value_column: SP500
+    daily_threshold_pct: 1.5
+
+  - ticker: DJIA
+    name: "Dow Jones Industrial Average"
+    file: data/DJIA.csv
+    date_column: observation_date
+    value_column: DJIA
+
+  - ticker: NASDAQCOM
+    name: "NASDAQ Composite"
+    file: data/NASDAQ.csv
+    date_column: observation_date
+    value_column: NASDAQCOM
