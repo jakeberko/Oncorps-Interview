@@ -1,6 +1,6 @@
 import csv
 from datetime import datetime
-import yaml
+from datetime import timedelta
 
 def load_prices(filepath, date_col, value_col):
     prices = []
@@ -35,10 +35,40 @@ def dod_check(ticker, prices, threshold):
           breaches.append(breach_dict)
     return breaches
 
+def wow_check(ticker, prices, threshold):
+    breaches = []
+    ptr = 0
+    for i, curr in enumerate(prices):
+        curr_date, curr_val = curr
+        if (curr_date - prices[ptr][0]) < timedelta(days=7): 
+            continue
+
+        prev_date, prev_val = prices[ptr]
+        pct_change = (curr_val - prev_val) / prev_val * 100
+        
+        if abs(pct_change) > threshold:
+            breach_dict = {
+                "ticker": ticker,
+                "date_from": prev_date,
+                "date_to": curr_date,
+                "value_from": prev_val,
+                "value_to": curr_val,
+                "pct_change": pct_change,
+            }
+            breaches.append(breach_dict)
+
+        ptr = i
+        
+    return breaches
+
 prices = load_prices("data/DJIA.csv", "observation_date", "DJIA")
 print(len(prices))
 print(type(prices[0][1])) 
 
 result = dod_check("DJIA", load_prices("data/DJIA.csv", "observation_date", "DJIA"), 1.0)
+print(len(result))
+print(result[0])
+
+result = wow_check("DJIA", load_prices("data/DJIA.csv", "observation_date", "DJIA"), 5.0)
 print(len(result))
 print(result[0])
