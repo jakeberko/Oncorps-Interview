@@ -60,28 +60,40 @@ def wow_check(ticker, prices, threshold):
         ptr = i
     return breaches
 
-def resolve_threshold(index_cfg, defaults_cfg):
+def resolve_check_settings(index_cfg, defaults_cfg):
+    daily_enabled = index_cfg.get("daily_enabled", defaults_cfg["checks"]["day_over_day"]["enabled"])
     daily_threshold = index_cfg.get("daily_threshold_pct", defaults_cfg["checks"]["day_over_day"]["threshold_pct"])
+    weekly_enabled = index_cfg.get("weekly_enabled", defaults_cfg["checks"]["week_over_week"]["enabled"])
     weekly_threshold = index_cfg.get("weekly_threshold_pct", defaults_cfg["checks"]["week_over_week"]["threshold_pct"])
-    return daily_threshold, weekly_threshold
+    return daily_enabled, daily_threshold, weekly_enabled, weekly_threshold
 
-prices = load_prices("data/DJIA.csv", "observation_date", "DJIA")
-print(len(prices))
-print(type(prices[0][1])) 
+def write_results(breaches, output_path):
+    fieldnames = ["ticker", "date_from", "date_to", "value_from", "value_to", "pct_change"]
 
-result = dod_check("DJIA", load_prices("data/DJIA.csv", "observation_date", "DJIA"), 1.0)
-print(len(result))
-print(result[0])
+    with open(output_path, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(breaches)
 
-result = wow_check("DJIA", load_prices("data/DJIA.csv", "observation_date", "DJIA"), 5.0)
-print(len(result))
-print(result[0])
+def run_pipeline(config_path, output_path):
+    with open(config_path) as f:
+        config = yaml.safe_load(f)
 
-with open("config.yaml") as f:
-    config = yaml.safe_load(f)
+    all_breaches = []
 
-sp500_cfg = config["indexes"][0] 
-djia_cfg = config["indexes"][1]    
+    for index_cfg in config["indexes"]:
+        ticker = index_cfg["ticker"]
+        prices = load_prices(index_cfg["file"], index_cfg["date_column"], index_cfg["value_column"])
+        daily_enabled, daily_threshold, weekly_enabled, weekly_threshold = resolve_check_settings(index_cfg, config["defaults"])
 
-print(resolve_threshold(sp500_cfg, config["defaults"]))
-print(resolve_threshold(djia_cfg, config["defaults"]))
+        # .extend() adds each breach dict individually .append() nests the whole list as one element
+        if daily_enabled:
+            all_breaches.extend(dod_check(ticker, prices, daily_threshold))
+        if weekly_enabled:
+            all_breaches.extend(wow_check(ticker, prices, weekly_threshold))
+
+    write_results(all_breaches, output_path)
+
+
+if __name__ == "__main__":
+    run_pipeline("config.yaml", "output/results.csv")
