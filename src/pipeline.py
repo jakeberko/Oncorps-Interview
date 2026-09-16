@@ -1,6 +1,7 @@
 import csv
 from datetime import datetime
 from datetime import timedelta
+import yaml
 
 def load_prices(filepath, date_col, value_col):
     prices = []
@@ -56,10 +57,13 @@ def wow_check(ticker, prices, threshold):
                 "pct_change": pct_change,
             }
             breaches.append(breach_dict)
-
         ptr = i
-        
     return breaches
+
+def resolve_threshold(index_cfg, defaults_cfg):
+    daily_threshold = index_cfg.get("daily_threshold_pct", defaults_cfg["checks"]["day_over_day"]["threshold_pct"])
+    weekly_threshold = index_cfg.get("weekly_threshold_pct", defaults_cfg["checks"]["week_over_week"]["threshold_pct"])
+    return daily_threshold, weekly_threshold
 
 prices = load_prices("data/DJIA.csv", "observation_date", "DJIA")
 print(len(prices))
@@ -72,3 +76,12 @@ print(result[0])
 result = wow_check("DJIA", load_prices("data/DJIA.csv", "observation_date", "DJIA"), 5.0)
 print(len(result))
 print(result[0])
+
+with open("config.yaml") as f:
+    config = yaml.safe_load(f)
+
+sp500_cfg = config["indexes"][0] 
+djia_cfg = config["indexes"][1]    
+
+print(resolve_threshold(sp500_cfg, config["defaults"]))
+print(resolve_threshold(djia_cfg, config["defaults"]))

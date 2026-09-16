@@ -1,5 +1,14 @@
 # Used AI to assist in creating the static indexing file
 
+defaults:
+  checks:
+    day_over_day:
+      enabled: true
+      threshold_pct: 1.0
+    week_over_week:
+      enabled: true
+      threshold_pct: 5.0
+
 indexes:
   - ticker: SP500
     name: "S&P 500"
